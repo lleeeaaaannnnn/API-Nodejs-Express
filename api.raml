@@ -1,0 +1,268 @@
+#%RAML 1.0
+title: Laundry API
+version: v1
+baseUri: http://{laundry-company}.laundry.api.com/{version}
+baseUriParameters:
+    laundry-company: 
+          description: Name of laundry company
+
+/users:
+    get:
+        responses:
+            200:
+                body:
+                    application/json:
+                        example: |
+                            [
+                                {
+                                    "address": {
+                                        "houseUnitNumber": "123",
+                                        "buildingName": "Somebuilding",
+                                        "street": "Some Street",
+                                        "baranggay": "Some barangay",
+                                        "city": "Pasig City"
+                                    },
+                                    "_id": "5b60bcc6c6dfb46784108720",
+                                    "username": "lean",
+                                    "email": "example@somesite.com",
+                                    "contactDetails": [
+                                        {
+                                            "_id": "5b60bcc6c6dfb46784108721",
+                                            "contactType": "landline",
+                                            "contactNumber": "5555555"
+                                        }
+                                    ],
+                                    "__v": 0
+                                },
+                                {
+                                    "address": {
+                                        "houseUnitNumber": "123",
+                                        "buildingName": "Somebuilding",
+                                        "street": "Some Street",
+                                        "baranggay": "Some barangay",
+                                        "city": "Pasig City"
+                                    },
+                                    "_id": "5b60bd6c21628f53f4136faf",
+                                    "username": "arrentina",
+                                    "email": "example21@somesite.com",
+                                    "contactDetails": [
+                                        {
+                                            "_id": "5b60bd6c21628f53f4136fb0",
+                                            "contactType": "landline",
+                                            "contactNumber": "5555555"
+                                        }
+                                    ],
+                                    "__v": 0
+                                }
+                            ]
+    post:
+        body:
+            example: |
+                {
+                    "username": "lean",
+                    "email": "example@pwet.com",
+                    "password": "abc123",
+                    "confirmPassword": "abc123",
+                    "address": {
+                        "houseUnitNumber": "123",
+                        "buildingName": "PRM",
+                        "street": "Evangelista Street",
+                        "baranggay": "Santolan",
+                        "city": "Pasig"
+                    },
+                    "contactDetails": [{
+                        "contactType": "landline",
+                        "contactNumber": "7385781"
+                    }]
+                }
+            
+    /{uID}:
+        uriParameters:
+            uID: 
+                description: "users _id"
+                type: integer
+                example: 5b60bd6c21628f53f4136faf
+        get:
+            responses:
+                body:
+                    application/json: 
+                        example: |
+                            {
+                                "address": {
+                                    "houseUnitNumber": "123",
+                                    "buildingName": "Somebuilding",
+                                    "street": "Some Street",
+                                    "baranggay": "Some barangay",
+                                    "city": "Pasig City"
+                                },
+                                "_id": "5b60bd6c21628f53f4136faf",
+                                "username": "arrentina",
+                                "email": "example21@somesite.com",
+                                "password": "$2b$10$hFU4ZrJcxgNw/JlVoixqkeJ3xnzYtFUsT.gjHOs9TPo2gP7.OG4s2",
+                                "contactDetails": [
+                                    {
+                                        "_id": "5b60bd6c21628f53f4136fb0",
+                                        "contactType": "landline",
+                                        "contactNumber": "5555555"
+                                    }
+                                ],
+                                "__v": 0
+                            }                            
+        put:
+            body:
+                example: |
+                    {
+                        "address": {
+                            "houseUnitNumber": "12443"
+                        }
+                    }
+            responses:
+                200:
+                    body:
+                        application/json:
+                            example: |
+                                {
+                                    "n": 1,
+                                    "nModified": 1,
+                                    "ok": 1
+                                }
+                                                  
+        delete:
+            responses:
+                200:
+                    text/plain:
+                        example: "arrentina removed"
+/orders:
+    get:
+        body:
+            application/json:
+                example: |
+                    [
+                        {
+                            "status": "PickedUp",
+                            "_id": "5b60c0d321628f53f4136fb1",
+                            "user_id": "5b60bcc6c6dfb46784108720",
+                            "quantity": 50,
+                            "weight": 6,
+                            "price": 120,
+                            "pickupDate": "2018-07-31T20:04:35.285Z",
+                            "deliveryDate": "2018-08-03T20:04:35.285Z",
+                            "__v": 0
+                        }
+                    ]
+    post:
+        body:
+            application/json:
+                example: |
+                    {
+                        "user_id": "5b568241d720254324bd57ad",
+                        "quantity": "50",
+                        "weight": "6"
+                    }
+        responses:
+            404:
+                application/json:
+                    example: |
+                        {
+                            "error": {
+                                "message": "5b568241d720254324bd57ad is not an existing user"
+                            }
+                        }
+            200:
+                application/json:
+                    example: |
+                        {
+                            "status": "PickedUp",
+                            "_id": "5b60c0d321628f53f4136fb1",
+                            "user_id": "5b60bcc6c6dfb46784108720",
+                            "quantity": 50,
+                            "weight": 6,
+                            "price": 120,
+                            "pickupDate": "2018-07-31T20:04:35.285Z",
+                            "deliveryDate": "2018-08-03T20:04:35.285Z",
+                            "__v": 0
+                        } 
+    /{oID}:
+        uriParameters:
+            oID: 
+                description: "Order id"
+                type: integer
+                example: 123
+        get:
+            responses:
+                200:
+                    body:
+                        application/json:
+                            example: |
+                                {
+                                    "status": "PickedUp",
+                                    "_id": "5b60c0d321628f53f4136fb1",
+                                    "user_id": "5b60bcc6c6dfb46784108720",
+                                    "quantity": 50,
+                                    "weight": 6,
+                                    "price": 120,
+                                    "pickupDate": "2018-07-31T20:04:35.285Z",
+                                    "deliveryDate": "2018-08-03T20:04:35.285Z",
+                                    "__v": 0
+                                }
+                404:
+                    body:
+                        application/json:
+                            example: |
+                                {
+                                    "error": {
+                                        "message": "Order with id: 5b60c0d321628f53f4136fb2 not found"
+                                    }
+                                }
+        put:
+            body:
+                application/json:
+                    example: |
+                        {
+                        	"status": "Washed"
+                        }
+            responses:
+                404:
+                    body:
+                        application/json:
+                            example: |
+                                {
+                                    "error": {
+                                        "message": "Order with id: 5b60c0d321628f53f4136fb2 not found"
+                                    }
+                                }                                                       
+                200:
+                    body:
+                        application/json:
+                            example: |
+                                {
+                                    "status": "Washed",
+                                    "_id": "5b60c0d321628f53f4136fb1",
+                                    "user_id": "5b60bcc6c6dfb46784108720",
+                                    "quantity": 50,
+                                    "weight": 6,
+                                    "price": 120,
+                                    "pickupDate": "2018-07-31T20:11:16.615Z",
+                                    "deliveryDate": "2018-08-03T20:11:16.615Z",
+                                    "__v": 0
+                                }                            
+        delete:
+            responses:
+                200:
+                    application/json:
+                        example: |
+                            {
+                                "success": "5b60c0d321628f53f4136fb1 deleted"
+                            }
+                404:
+                    body:
+                        application/json:
+                            example: |
+                                {
+                                    "error": {
+                                        "message": "Order with id: 5b60c0d321628f53f4136fb2 not found"
+                                    }
+                                }                       
+                
+
+

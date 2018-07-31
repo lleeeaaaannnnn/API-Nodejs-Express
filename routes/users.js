@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
             .select('username email')
             .then(user => {
                 if(user) {
-                    const err = new Error('User with that email already exists');
+                    const err = new Error('User with that username/email already exists');
                     err.status = 400;
                     return next(err);
                 } else {
