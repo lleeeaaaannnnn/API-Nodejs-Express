@@ -16,11 +16,10 @@ const UserSchema = new Schema({
     username: uniqueString,
     email: uniqueString,
     address: {
-        houseUnitNumber: requiredString,
-        buildingName: requiredString,
-        street: requiredString,
-        baranggay: requiredString,
+        streetAddress: requiredString,
         city: requiredString,
+        state: requiredString,
+        postalCode: requiredString
     },
     contactDetails: 
         [{
@@ -56,10 +55,39 @@ UserSchema.pre('save', function (next) {
 
 UserSchema.pre('remove', function(next) {
     const user = this;
-    Order.find({user_id: this.id}).remove()
+    Order.find({username: this.username}).remove()
         .then(info => next())
         .catch(err => next(err));
 });
 
 const User = mongoose.model('User', UserSchema);
 module.exports = User;
+
+
+// Create/Update admin user
+bcrypt.hash(process.env.ADMIN_PW, 10, (err, hash) => {
+    if (err) {
+        console.error(err);
+    } else {
+        process.env.ADMIN_PW = hash;
+        User.findOneAndUpdate({username: process.env.ADMIN_UNAME},{
+            username: process.env.ADMIN_UNAME,
+            email: process.env.ADMIN_EMAIL,
+            password: process.env.ADMIN_PW,
+            
+            address: {
+                streetAddress: "default",
+                city: "default",
+                state: "default",
+                postalCode: "default"
+            },
+            contactDetails: 
+                [{
+                    contactType: "landline",
+                    contactNumber: "555555"
+                }]
+        }, {upsert:true}).exec()
+        .then(admin => console.log(`${admin.username} created`))
+        .catch(err => console.error(err));
+    }
+});

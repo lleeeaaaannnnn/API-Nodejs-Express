@@ -1,7 +1,7 @@
 'use strict';
 
 // require modules
-const result = require('dotenv').config()
+const result = require('dotenv').config({path: './private/.env'})
 const express = require('express');
 const jsonParser = require('body-parser').json;
 const logger = require('morgan');
@@ -13,8 +13,8 @@ const RateLimit = require('express-rate-limit');
 
 // initialize limiter
 const limiter = new RateLimit({
-    windowMs: 15*60*1000, // 15 minutes to reset
-    max: 100, // 100 requests
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW), // milliseconds to reset
+    max: parseInt(process.env.RATE_LIMIT_MAX), // max requests before limiter triggers
     delayMs: 0 // disable respose delay
 });
 
@@ -37,6 +37,31 @@ db.once('open', () => {
     console.log('db connection successful');
 })
 
+
+const authenticateUser = function (searchOptions, password, cb) {
+    User.findOne(searchOptions)
+    .then(user => {
+        if (!user) {
+            let err = new Error('Invalid credentials');
+            err.status = 401;
+            cb(null, err);
+        } else {
+            bcrypt.compare(password, user.password)
+            .then(result => {
+                if(!result) {
+                    const err = new Error('Invalid credentials');
+                    err.status = 401;
+                    cb(null, err);
+                } else {
+                    cb(user);
+                }
+            })
+            .catch(err => cb(null, err));
+        }
+    })
+    .catch(err => cb(null, err));    
+}
+
 // Basic auth
 app.use((req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -47,31 +72,13 @@ app.use((req, res, next) => {
             username: authValues[0],
             password: authValues[1]
         }
-        User.findOne({username: auth.username})
-        .then(user => {
-            if (!user) {
-                let err = new Error('Invalid credentials');
-                err.status = 401;
-                return next(err);
-            } else {
-                bcrypt.compare(auth.password, user.password)
-                .then(result => {
-                    if(!result) {
-                        const err = new Error('Invalid credentials');
-                        err.status = 401;
-                        next(err);
-                    } else {
-                        req.user_name = user.username;
-                        next();
-                    }
-                })
-                .catch(err => next(err));
-            }
+        authenticateUser({username: auth.username}, auth.password, (user, err) => {
+            if(err) next(err);
+            req.user_name = user.username;
+            next();
         })
-        .catch(err => next(err));
     }
 });
-
 
 //
 app.use((req, res, next) => {
@@ -84,6 +91,20 @@ app.use((req, res, next) => {
 	next();
 });
 
+// Check users for 3rd party apps
+app.post('/authenticate_user', (req, res, next) => {
+    if(!req.body.email || !req.body.password) {
+        const err = new Error('Email and password required');
+        err.status = 404;
+        next(err);
+    } else {
+        authenticateUser({email: req.body.email}, req.body.password, (user, err) => {
+            if(err) next(err);
+            req.user_name = user.username;
+            res.json(user);
+        })
+    }
+})
 
 // Routes
 const userRoutes = require('./routes/users');

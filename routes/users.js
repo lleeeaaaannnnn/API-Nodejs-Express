@@ -2,14 +2,13 @@
 
 const express = require('express');
 const router = express.Router();
-
 // file imports
 const User = require('../models/user')
 const Order = require('../models/order')
 
 
-router.param('uID', (req, res, next, userID) => {
-    User.findById(userID)
+router.param('uName', (req, res, next, uName) => {
+    User.findOne({username: uName})
         .then(user => {
             if(user) {
                 req.user = user;
@@ -69,17 +68,17 @@ router.post('/', (req, res, next) => {
     }
 });
 
-router.get('/:uID', (req, res, next) => {
+router.get('/:uName', (req, res, next) => {
     res.json(req.user);
 });
 
-router.delete('/:uID', (req, res, next) => {
+router.delete('/:uName', (req, res, next) => {
     req.user.remove()
         .then(user => res.send(`${user.username} removed`))
         .catch(err => next(err));
 })
 
-router.put('/:uID', (req, res, next) => {
+router.put('/:uName', (req, res, next) => {
     if (req.body.username || req.body.email) {
         const err = new Error('Cannot update username or email');
         err.status = 400;
@@ -92,13 +91,13 @@ router.put('/:uID', (req, res, next) => {
 });
 
 
-router.get('/:uID/orders', (req, res, next) => {
-    Order.find({user_id: req.user.id})
+router.get('/:uName/orders', (req, res, next) => {
+    Order.find({username: req.user.username})
         .then(orders => res.json(orders))
         .catch(err => next(err));
 });
 
-router.post('/:uID/orders', (req, res, next) => {
+router.post('/:uName/orders', (req, res, next) => {
     if(!req.body.quantity || !req.body.weight) {
         const err = new Error('Quantity and Weight requried');
         err.status = 400;
@@ -113,16 +112,17 @@ router.post('/:uID/orders', (req, res, next) => {
     }
 });
 
-router.get('/:uID/orders/:oID', (req, res, next) => {
+router.get('/:uName/orders/:oID', (req, res, next) => {
     res.redirect(307, `/orders/${req.params.oID}`)
 })
 
-router.put('/:uID/orders/:oID', (req, res, next) => {
+router.put('/:uName/orders/:oID', (req, res, next) => {
     res.redirect(307, `/orders/${req.params.oID}`)
 })
 
-router.delete('/:uID/orders/:oID', (req, res, next) => {
+router.delete('/:uName/orders/:oID', (req, res, next) => {
     res.redirect(307, `/orders/${req.params.oID}`)
 })
+
 
 module.exports = router;
