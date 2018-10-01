@@ -1,5 +1,6 @@
 'use strict';
 
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose')
 const Schema = mongoose.Schema;
@@ -32,12 +33,33 @@ const UserSchema = new Schema({
         }],
 
     password: { type: String, required: true },
-    
+    jsonWebToken: String,
     resetPasswordToken: String,
-    resetPasswordTokenExpiration: Date
+    resetPasswordTokenExpiration: Date,
+    requestPickup: {
+        pickupFlag: {
+            type: Boolean,
+            default: false
+        },
+        date: {
+            type: Date
+        }
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false
+    }
+    
+
 
 });
 
+UserSchema.method('getAuthToken', function() {
+    const token = jwt.sign({id: this.username}, process.env.JWT_SECRET, {expiresIn: '1h'});
+    this.jsonWebToken = token;
+    this.save();
+    return token;
+})
 
 // hash before saving pw 'save' is a Mongoose middleware
 // need to use function keyword to establish 'this'..arrow function does not work

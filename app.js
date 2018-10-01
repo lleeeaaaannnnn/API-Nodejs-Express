@@ -10,6 +10,7 @@ const User = require('./models/user');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const RateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 
 // initialize limiter
 const limiter = new RateLimit({
@@ -26,15 +27,17 @@ app.use(limiter); // use limiter as middleware
 
 
 // initialize mongoose connection
-mongoose.connect(process.env.MONGOOSE_DB, { useNewUrlParser: true });
-const db = mongoose.connection;
-
+mongoose.connect(process.env.MONGOOSE_DB, { useNewUrlParser: true })
+    .then(result => {})
+    .catch(err => console.log(err.message));
+    
+const db = mongoose.connection
 db.on('error', err => {
-    console.error('connection error:', err);
+  console.error('connection error:', err);
 });
 
 db.once('open', () => {
-    console.log('db connection successful');
+  console.log('db connection successful');
 })
 
 
@@ -44,7 +47,7 @@ const authenticateUser = function (searchOptions, password, cb) {
         if (!user) {
             let err = new Error('Invalid credentials');
             err.status = 401;
-            cb(null, err);
+            cb(err, err);
         } else {
             bcrypt.compare(password, user.password)
             .then(result => {
@@ -62,9 +65,15 @@ const authenticateUser = function (searchOptions, password, cb) {
     .catch(err => cb(null, err));    
 }
 
-// Basic auth
+
+// Auth middleware
 app.use((req, res, next) => {
     const authHeader = req.headers['authorization'];
+    if (!authHeader) {
+        const err = new Error('Authorization required');
+        err.status = 401;
+        return next(err);
+    }
     const authToken = authHeader.split(' ');
     if(authToken[0].toLowerCase() === 'basic') {
         const authValues = Buffer.from(authToken[1], 'base64').toString().split(':');
@@ -74,11 +83,31 @@ app.use((req, res, next) => {
         }
         authenticateUser({username: auth.username}, auth.password, (user, err) => {
             if(err) next(err);
+            req.user = user;
             req.user_name = user.username;
             next();
         })
+    } else if (authToken[0].toLowerCase() === 'bearer') {
+        jwt.verify(authToken[1], process.env.JWT_SECRET, (err, decoded) => {
+            if(err) {
+                next(err);
+            } else {
+                console.log(decoded);
+                User.findOne({username: decoded.id})
+                .then(user => {
+                    req.user = user;
+                    next();
+                })
+                .catch(err => next(err));
+            }
+        })
+    } else {
+        const err = new Error(`${authToken[0]} not supported`)
+        err.status = 401;
+        next(err);
     }
 });
+
 
 //
 app.use((req, res, next) => {
@@ -91,6 +120,7 @@ app.use((req, res, next) => {
 	next();
 });
 
+
 // Check users for 3rd party apps
 app.post('/authenticate_user', (req, res, next) => {
     if(!req.body.email || !req.body.password) {
@@ -99,10 +129,24 @@ app.post('/authenticate_user', (req, res, next) => {
         next(err);
     } else {
         authenticateUser({email: req.body.email}, req.body.password, (user, err) => {
-            if(err) next(err);
-            req.user_name = user.username;
+            if(err) { 
+                return next(err);
+            }
+            req.user = user;
+            req.user_name = user.username;            
             res.json(user);
         })
+    }
+})
+
+
+app.get('/getAuthToken', (req, res, next) => {
+    if(req.user) {
+        res.json({token: req.user.getAuthToken()});
+    } else {
+        const err = new Error('You are not authorized');
+        err.status = 401;
+        next(err);
     }
 })
 
@@ -127,6 +171,7 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
     res.status(err.status || 500); // undefined when internal server error, hence 500
     res.json({
+        status: 'error',
         error: {
             message: err.message
         }

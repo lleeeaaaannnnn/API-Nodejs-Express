@@ -22,7 +22,9 @@ router.param('uName', (req, res, next, uName) => {
 });
 
 router.get('/', (req, res, next) => {
-    User.find().select('-password')
+    const skip = parseInt(req.query.skip) || 0;
+    const limit = parseInt(req.query.limit) || 0;
+    User.find().skip(skip).limit(limit).select('-password')
         .then(users => {
             const pwet = users;
             return res.json(pwet);
@@ -84,7 +86,10 @@ router.put('/:uName', (req, res, next) => {
         err.status = 400;
         return next(err);
     } else {
-        req.user.update(req.body)
+        const updates = req.body;
+        console.log(updates);
+        if (req.body.requestPickup) updates.requestPickup.date = Date.now();
+        req.user.update(updates)
             .then(info => res.json(info))
             .catch(err => next(err));
     }

@@ -8,13 +8,13 @@ const User = require('../models/user');
 const Order = require('../models/order');
 
 
-function validateUserId(req, res, next) {
-    User.findById(req.body.user_id)
+function validateUsername(req, res, next) {
+    User.findOne({username: req.body.username})
         .then(user => {
             if(user) {
                 next();
             } else {
-                const err = new Error(`${req.body.user_id} is not an existing user`);
+                const err = new Error(`${req.body.username} is not an existing user`);
                 err.status = 404;
                 next(err);
             }
@@ -38,23 +38,29 @@ router.param('oID', (req, res, next, orderID) => {
 });
 
 router.get('/', (req, res, next) => {
-    Order.find()
+    const options = {};
+    const skip = parseInt(req.query.skip) || 0;
+    const limit = parseInt(req.query.limit) || 0;
+    if (req.query.status) options.status = req.query.status;
+    if (req.query.username) options.username = req.query.username;
+
+    Order.find(options).skip(skip).limit(limit).sort({pickupDate: 1})
         .then(orders => res.json(orders))
         .catch(err => next(err));    
 });
 
-router.post('/', validateUserId, (req, res, next) => {
-    if(!req.body.user_id || !req.body.quantity || !req.body.weight) {
+router.post('/', validateUsername, (req, res, next) => {
+    if(!req.body.username || !req.body.quantity || !req.body.weight) {
         const err = new Error('Incomplete details');
         err.status = 400;
         next(err);
     } else {
         Order.create({
-            user_id: req.body.user_id,
+            username: req.body.username,
             quantity: req.body.quantity,
             weight: req.body.weight
         })
-        .then(order => res.json(order))
+        .then(order => res.status(201).json(order))
         .catch(err => next(err))
     }
 });

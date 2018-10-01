@@ -4,10 +4,10 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const PRICE_PER_KG = 20; // price per KG..store in props variable
-const ORDER_STATUSES = ['PickedUp', 'Washed', 'ForDelivery'];
+const ORDER_STATUSES = ['wash', 'washed', 'deliver','delivered'];
 
 const OrderSchema = new Schema({
-    user_id: { 
+    username: { 
         type: String,
         required: true,
         trim: true
@@ -21,7 +21,7 @@ const OrderSchema = new Schema({
         type: String, 
         trim: true,
         enum: ORDER_STATUSES,
-        default: 'PickedUp' 
+        default: 'wash' 
     }
 });
 
